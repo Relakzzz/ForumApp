@@ -5,8 +5,8 @@
 ### Phase 1: Foundation & Authentication
 - [x] Set up Discourse API integration and authentication
 - [ ] Implement OAuth login flow with Discourse
-- [ ] Create login screen with "Login with Discourse" button
-- [ ] Handle OAuth callback and token storage
+- [x] Create login screen with "Login with Discourse" button
+- [x] Handle OAuth callback and token storage
 - [ ] Implement logout functionality
 - [ ] Create user session management
 
@@ -26,7 +26,7 @@
 - [x] Show user avatars and usernames in posts
 - [x] Display timestamps for posts and topics
 - [x] Implement scrolling through long threads
-- [ ] Add "Reply" button for authenticated users
+- [x] Add "Reply" button for authenticated users
 
 ### Phase 4: Search & Discovery
 - [x] Create search tab and screen
@@ -255,7 +255,7 @@
 - [x] Create comprehensive unit tests for OAuth flow
 - [ ] Configure Discourse OAuth credentials in environment variables
 - [ ] Test OAuth flow on native devices with real Discourse instance
-- [ ] Integrate Discourse login button into home screen
+- [x] Integrate Discourse login button into home screen
 - [ ] Add logout functionality with session cleanup
 
 **Note:** Discourse OAuth is fully implemented with:

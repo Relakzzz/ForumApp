@@ -1,11 +1,13 @@
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable, Image, ScrollView } from 'react-native';
 import { ThemedText } from './themed-text';
 import { useThemeColor } from '@/hooks/use-theme-color';
 import { useColorScheme } from '@/hooks/use-color-scheme';
+import { parseImagesFromHtml } from '@/lib/image-parser';
 
 interface QuotedPostProps {
   username: string;
   content: string;
+  rawHtml?: string;
   nestLevel?: number;
   onPress?: () => void;
 }
@@ -15,6 +17,7 @@ const MAX_NEST_LEVEL = 3; // Prevent infinite nesting display
 export function QuotedPost({ 
   username, 
   content, 
+  rawHtml,
   nestLevel = 0,
   onPress 
 }: QuotedPostProps) {
@@ -28,6 +31,9 @@ export function QuotedPost({
   
   // Calculate left padding based on nesting level
   const leftPadding = displayNestLevel * 12;
+  
+  // Extract images if rawHtml is provided
+  const images = rawHtml ? parseImagesFromHtml(rawHtml) : [];
   
   // Truncate content if too long
   const displayContent = content.length > 150 
@@ -74,6 +80,23 @@ export function QuotedPost({
       >
         {displayContent}
       </ThemedText>
+
+      {images.length > 0 && (
+        <ScrollView 
+          horizontal 
+          showsHorizontalScrollIndicator={false} 
+          style={styles.imageContainer}
+        >
+          {images.map((img, index) => (
+            <Image 
+              key={index}
+              source={{ uri: img.url }}
+              style={styles.quotedImage}
+              resizeMode="cover"
+            />
+          ))}
+        </ScrollView>
+      )}
     </Pressable>
   );
 }
@@ -107,5 +130,16 @@ const styles = StyleSheet.create({
     fontSize: 12,
     lineHeight: 17,
     opacity: 0.85,
+  },
+  imageContainer: {
+    marginTop: 8,
+    flexDirection: 'row',
+  },
+  quotedImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 4,
+    marginRight: 8,
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
 });

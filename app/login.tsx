@@ -7,11 +7,14 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuthForum } from "@/hooks/use-auth-forum";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useDiscourseAuth } from "@/hooks/use-discourse-auth";
+import { DiscourseLoginButton } from "@/components/discourse-login-button";
 
 export default function LoginScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { login, loading } = useAuthForum();
+  const { login: loginWithDiscourse, isLoggingIn, error: authError } = useDiscourseAuth();
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
@@ -110,12 +113,12 @@ export default function LoginScreen() {
 
           <Pressable
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || isLoggingIn}
             style={({ pressed }) => [
               styles.loginButton,
               {
                 backgroundColor: tintColor,
-                opacity: pressed || loading ? 0.8 : 1,
+                opacity: pressed || loading || isLoggingIn ? 0.8 : 1,
               },
             ]}
           >
@@ -125,6 +128,18 @@ export default function LoginScreen() {
               <ThemedText style={styles.loginButtonText}>Sign In</ThemedText>
             )}
           </Pressable>
+
+          <ThemedView style={styles.dividerContainer}>
+            <ThemedView style={[styles.divider, { backgroundColor: textColor + "20" }]} />
+            <ThemedText style={styles.dividerText}>OR</ThemedText>
+            <ThemedView style={[styles.divider, { backgroundColor: textColor + "20" }]} />
+          </ThemedView>
+
+          <DiscourseLoginButton 
+            onPress={loginWithDiscourse} 
+            loading={isLoggingIn} 
+            error={authError} 
+          />
 
           <ThemedText type="default" style={styles.disclaimer}>
             You need a valid Horlogeforum account to post and reply. Browsing the forum is available without logging in.
@@ -192,5 +207,20 @@ const styles = StyleSheet.create({
     textAlign: "center",
     opacity: 0.6,
     lineHeight: 18,
+    marginTop: 20,
+  },
+  dividerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginVertical: 20,
+  },
+  divider: {
+    flex: 1,
+    height: 1,
+  },
+  dividerText: {
+    marginHorizontal: 10,
+    fontSize: 12,
+    opacity: 0.5,
   },
 });

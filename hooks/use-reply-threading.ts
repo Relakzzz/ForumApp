@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { Post } from '@/lib/discourse-api';
+import { stripHtmlTags } from '@/lib/image-parser';
 
 interface PostWithQuote extends Post {
   quotedPost?: Post;
@@ -29,31 +30,13 @@ export function useReplyThreading(posts: Post[]): PostWithQuote[] {
           enrichedPost.quotedPost = quotedPost;
           
           // Extract plain text from the quoted post's cooked HTML
-          enrichedPost.quotedContent = extractPlainText(quotedPost.cooked);
+          enrichedPost.quotedContent = stripHtmlTags(quotedPost.cooked || '');
         }
       }
 
       return enrichedPost;
     });
   }, [posts]);
-}
-
-/**
- * Extract plain text from HTML, removing tags and decoding entities
- */
-function extractPlainText(html: string | undefined): string {
-  if (!html) return '';
-  
-  return html
-    .replace(/<[^>]*>/g, '') // Remove HTML tags
-    .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
-    .replace(/&lt;/g, '<')
-    .replace(/&gt;/g, '>')
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\n\n+/g, ' ') // Replace multiple newlines with single space
-    .trim();
 }
 
 /**

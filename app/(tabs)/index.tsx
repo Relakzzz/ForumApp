@@ -8,6 +8,8 @@ import { ThemedView } from "@/components/themed-view";
 import { TopicCard } from "@/components/topic-card";
 import { useLatestTopics } from "@/hooks/use-forum-data-trpc";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { useDiscourseAuth } from "@/hooks/use-discourse-auth";
+import { DiscourseLoginButton } from "@/components/discourse-login-button";
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
@@ -16,6 +18,7 @@ export default function HomeScreen() {
   const { data: topics, loading, error } = useLatestTopics(page);
   const [refreshing, setRefreshing] = useState(false);
   const tintColor = useThemeColor({}, "tint");
+  const { user, login, isLoggingIn, error: authError, isAuthenticated } = useDiscourseAuth();
 
   // Update all topics when new page is loaded
   useEffect(() => {
@@ -47,6 +50,16 @@ export default function HomeScreen() {
 
   return (
     <ThemedView style={styles.container}>
+      {!isAuthenticated && (
+        <View style={styles.loginContainer}>
+          <DiscourseLoginButton 
+            onPress={login} 
+            loading={isLoggingIn} 
+            error={authError} 
+          />
+        </View>
+      )}
+      
       {loading && page === 0 ? (
         <View style={styles.centerContainer}>
           <ActivityIndicator size="large" color={tintColor} />
@@ -65,6 +78,13 @@ export default function HomeScreen() {
           onEndReachedThreshold={0.5}
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={tintColor} />
+          }
+          ListHeaderComponent={
+            isAuthenticated && user ? (
+              <View style={styles.welcomeHeader}>
+                <ThemedText type="subtitle">Welcome back, {user.username}!</ThemedText>
+              </View>
+            ) : null
           }
           ListEmptyComponent={
             !loading ? (
@@ -94,5 +114,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
+  },
+  loginContainer: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
+  },
+  welcomeHeader: {
+    padding: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.1)",
   },
 });

@@ -226,8 +226,36 @@ export function stripHtmlTags(html: string): string {
   // Remove image metadata patterns - comprehensive master regex
   // Catches all known formats: long IDs, dates, IMG_ format, filenames with dimensions
   // Examples: 176335703935216634950995245793821920×2560 135 KB, 20260123_1634511920×2560 352 KB
-  content = content.replace(/[\d_-]*\d+[×x]\d+\s+\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+  
+  // 1. Match dimensions and size: 1920×2560 135 KB
+  content = content.replace(/\d+[×x]\d+\s+\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+  
+  // 2. Match filename-like patterns followed by dimensions or size
+  // This catches "20260123_1633261920×1499 177 KB"
+  content = content.replace(/[\w.-]+\d+[×x]\d+\s+\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+  
+  // 3. Match standalone file extensions with size
   content = content.replace(/\b[\w.-]+\.(?:jpg|jpeg|png|gif|webp|bmp)\s+\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+  
+  // 4. Match standalone dimensions if they look like metadata
+  content = content.replace(/\b\d{3,4}[×x]\d{3,4}\b/g, '');
+
+  // 5. Match standalone size patterns
+  content = content.replace(/\b\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+
+  // 6. Match common filename prefixes followed by dimensions/size
+  // Catches "image562×750 60.2 KB"
+  content = content.replace(/\bimage\d+[×x]\d+\s+\d+(?:\.\d+)?\s*(?:KB|MB|GB)\b/gi, '');
+  content = content.replace(/\bimage\d+[×x]\d+\b/gi, '');
+  
+  // 7. Match any remaining patterns of filename + dimensions
+  content = content.replace(/\b[\w.-]+?\d+[×x]\d+\b/gi, '');
+
+  // 8. Match common filename patterns like image562x750
+  content = content.replace(/\bimage\d+[×x]\d+\b/gi, '');
+  
+  // 9. Match any word that contains dimensions like 562x750
+  content = content.replace(/\b\w*\d+[×x]\d+\w*\b/gi, '');
   
   // Clean up any extra whitespace that resulted from removals
   content = content.replace(/\s+/g, ' ').trim();

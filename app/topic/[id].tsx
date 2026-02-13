@@ -63,6 +63,25 @@ export default function TopicDetailScreen() {
   // Fetch topic data with pagination support
   const { posts, topic, loading, loadingMore, error, hasMore, loadMorePosts } = useTopicDetailPaginated(topicId);
 
+  const scrollToTop = () => {
+    flatListRef.current?.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  const scrollToLastPost = () => {
+    if (posts.length > 0) {
+      // If there are more posts to load, we should load them first or scroll to the current end
+      if (hasMore) {
+        // Option 1: Scroll to the end of current list and trigger load more
+        flatListRef.current?.scrollToEnd({ animated: true });
+        // Option 2: Explicitly call loadMorePosts if needed
+        loadMorePosts();
+      } else {
+        // If all posts are loaded, scroll to the very end
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }
+    }
+  };
+
   // Refresh topic when screen is focused
   useFocusEffect(
     React.useCallback(() => {
@@ -195,6 +214,17 @@ export default function TopicDetailScreen() {
     setSelectedPost(null);
   };
 
+  const handleReply = () => {
+    if (!topicId) return;
+    router.push({
+      pathname: "/reply-topic",
+      params: {
+        topicId: topicId.toString(),
+        topicTitle: topic?.title || "",
+      },
+    });
+  };
+
   const renderHeader = () => (
     <View style={styles.header}>
       {hasNewPosts && (
@@ -264,15 +294,16 @@ export default function TopicDetailScreen() {
       
       const replyDepth = post.reply_to_post_number ? getReplyDepth(post, posts) : 0;
       
-      return (
-        <View style={[styles.post, { borderBottomColor: borderColor }]}>
-          {/* Display quoted post if this is a reply */}
-          {quotedPost && quotedContent && (
-            <QuotedPost
-              username={quotedPost.username}
-              content={quotedContent}
-              nestLevel={replyDepth - 1}
-              onPress={() => {
+	      return (
+	        <View style={[styles.post, { borderBottomColor: borderColor }]}>
+	          {/* Display quoted post if this is a reply */}
+	          {quotedPost && quotedContent && (
+	            <QuotedPost
+	              username={quotedPost.username}
+	              content={quotedContent}
+	              rawHtml={quotedPost.cooked}
+	              nestLevel={replyDepth - 1}
+	              onPress={() => {
                 // Scroll to the quoted post
                 const quotedIndex = posts.findIndex(p => p.post_number === post.reply_to_post_number);
                 if (quotedIndex >= 0 && flatListRef.current) {
@@ -376,6 +407,15 @@ export default function TopicDetailScreen() {
         onEndReached={loadMorePosts}
         onEndReachedThreshold={0.5}
         scrollEventThrottle={16}
+        onScrollToIndexFailed={(info) => {
+          console.log("[TopicDetail] Scroll to index failed, attempting fallback", info.index);
+          // Fallback: scroll to offset or just scroll to end if it was the last item
+          if (info.index >= posts.length - 1) {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          } else {
+            flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: true });
+          }
+        }}
         onScroll={(event) => {
           saveScrollPosition(event.nativeEvent.contentOffset.y);
         }}
@@ -387,6 +427,29 @@ export default function TopicDetailScreen() {
           />
         }
       />
+
+      <View style={[styles.fabContainer, { bottom: Math.max(insets.bottom, 16) + 16 }]}>
+        <Pressable
+          onPress={scrollToTop}
+          style={[styles.scrollFab, { backgroundColor: tintColor, marginBottom: 8 }]}
+        >
+          <ThemedText style={styles.scrollFabText}>↑</ThemedText>
+        </Pressable>
+        
+        <Pressable
+          onPress={scrollToLastPost}
+          style={[styles.scrollFab, { backgroundColor: tintColor, marginBottom: 8 }]}
+        >
+          <ThemedText style={styles.scrollFabText}>↓</ThemedText>
+        </Pressable>
+
+        <Pressable
+          onPress={handleReply}
+          style={[styles.fab, { backgroundColor: tintColor }]}
+        >
+          <ThemedText style={styles.fabText}>Reply</ThemedText>
+        </Pressable>
+      </View>
       
       {showQuotePopup && selectedPost && (
         <QuotePopup
@@ -512,5 +575,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     textAlign: "center",
     marginTop: 20,
+  },
+  fabContainer: {
+    position: "absolute",
+    right: 16,
+    alignItems: "center",
+  },
+  scrollFab: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  scrollFabText: {
+    color: "#fff",
+    fontSize: 20,
+    fontWeight: "bold",
+  },
+  fab: {
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 28,
+    elevation: 5,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fabText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
