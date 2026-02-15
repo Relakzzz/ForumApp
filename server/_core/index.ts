@@ -56,6 +56,78 @@ async function startServer() {
 
   registerOAuthRoutes(app);
 
+  // Discourse OAuth routes
+  app.get("/api/oauth/discourse/callback", async (req, res) => {
+    const { code, state } = req.query;
+    if (!code || !state) {
+      return res.status(400).json({ error: "code and state are required" });
+    }
+    
+    // In a real app, we would exchange the code for a token here
+    // For now, we'll redirect back to the frontend with the code and state
+    const frontendUrl = process.env.EXPO_WEB_PREVIEW_URL || "http://localhost:8081";
+    res.redirect(`${frontendUrl}/oauth/discourse/callback?code=${code}&state=${state}`);
+  });
+
+  app.post("/api/oauth/discourse/exchange", async (req, res) => {
+    const { code, state, redirectUri } = req.body;
+    
+    try {
+      const forumUrl = process.env.EXPO_PUBLIC_DISCOURSE_URL || "https://horlogeforum.nl";
+      const clientId = process.env.EXPO_PUBLIC_DISCOURSE_CLIENT_ID;
+      const clientSecret = process.env.EXPO_PUBLIC_DISCOURSE_CLIENT_SECRET;
+
+      if (!clientId || !clientSecret) {
+        return res.status(500).json({ error: "Discourse OAuth not configured on server" });
+      }
+
+      const response = await fetch(`${forumUrl}/oauth/token`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id: clientId,
+          client_secret: clientSecret,
+          grant_type: "authorization_code",
+          code,
+          redirect_uri: redirectUri,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.text();
+        return res.status(response.status).json({ error });
+      }
+
+      const data = await response.json();
+      
+      // Fetch user info
+      const userResponse = await fetch(`${forumUrl}/api/users/me.json`, {
+        headers: { Authorization: `Bearer ${data.access_token}` },
+      });
+      
+      if (!userResponse.ok) {
+        return res.status(userResponse.status).json({ error: "Failed to fetch user info" });
+      }
+      
+      const userData = await userResponse.json();
+      
+      res.json({
+        accessToken: data.access_token,
+        user: {
+          id: userData.user.id,
+          username: userData.user.username,
+          name: userData.user.name,
+          avatar_url: userData.user.avatar_template 
+            ? `${forumUrl}${userData.user.avatar_template.replace("{size}", "96")}`
+            : null,
+        }
+      });
+    } catch (error) {
+      console.error("[Discourse OAuth] Exchange error:", error);
+      res.status(500).json({ error: "Internal server error" });
+    }
+  });
+
   app.get("/api/health", (_req, res) => {
     res.json({ ok: true, timestamp: Date.now() });
   });

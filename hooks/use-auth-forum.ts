@@ -134,10 +134,50 @@ export function useAuthForum(): UseAuthForumReturn {
   useEffect(() => {
     const loadUser = async () => {
       try {
+        console.log("[useAuthForum] Initializing session...");
         const storedUser = await getStoredUser();
-        const authenticated = await isAuthenticated();
-        setUser(storedUser);
-        setIsAuth(authenticated);
+        
+        if (storedUser) {
+          console.log("[useAuthForum] Found stored user:", storedUser.username);
+          setUser(storedUser);
+          setIsAuth(true);
+          
+          // Background validation: refresh user info from API
+          try {
+            const response = await fetch(`${FORUM_URL}/u/${storedUser.username}.json`);
+            if (response.ok) {
+              const userData = await response.json();
+              const updatedUser: DiscourseUser = {
+                id: userData.user.id,
+                username: userData.user.username,
+                name: userData.user.name,
+                avatar_template: userData.user.avatar_template,
+                created_at: userData.user.created_at,
+                post_count: userData.user.post_count,
+                topic_count: userData.user.topic_count,
+                trust_level: userData.user.trust_level,
+                admin: userData.user.admin,
+                moderator: userData.user.moderator,
+              };
+              
+              // Update state and storage if info changed
+              setUser(updatedUser);
+              const AsyncStorage = await import("@react-native-async-storage/async-storage").then((m) => m.default);
+              await AsyncStorage.setItem(USER_KEY, JSON.stringify(updatedUser));
+              console.log("[useAuthForum] Session validated and updated");
+            } else if (response.status === 403 || response.status === 401) {
+              // Session expired on server
+              console.log("[useAuthForum] Session expired on server, logging out");
+              await handleLogout();
+            }
+          } catch (apiError) {
+            console.log("[useAuthForum] Background validation failed (offline?), keeping local session");
+          }
+        } else {
+          console.log("[useAuthForum] No stored session found");
+          setUser(null);
+          setIsAuth(false);
+        }
       } catch (error) {
         console.error("[useAuthForum] Error loading user:", error);
       } finally {

@@ -5,23 +5,35 @@ import { useState, useCallback } from "react";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TopicCard } from "@/components/topic-card";
-import { useSearchTopics } from "@/hooks/use-forum-data-trpc";
+import { useSearchTopics, useCategories } from "@/hooks/use-forum-data-trpc";
 import { useThemeColor } from "@/hooks/use-theme-color";
+import { CategorySelector } from "@/components/category-selector";
 
 export default function SearchScreen() {
   const insets = useSafeAreaInsets();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const { data: results, loading, error } = useSearchTopics(searchQuery);
+  const { data: categories } = useCategories();
+  
   const textColor = useThemeColor({}, "text");
   const tintColor = useThemeColor({}, "tint");
   const backgroundColor = useThemeColor({}, "background");
   const borderColor = useThemeColor({}, "icon");
 
-  const topics = results?.topics || [];
+  // Filter topics by category if one is selected
+  const topics = results?.topics?.filter((topic: any) => {
+    if (!selectedCategory) return true;
+    return topic.category_slug === selectedCategory;
+  }) || [];
 
   const handleSearch = useCallback((text: string) => {
     setSearchQuery(text);
   }, []);
+
+  const handleSelectCategory = (slug: string | null) => {
+    setSelectedCategory(slug);
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -48,6 +60,11 @@ export default function SearchScreen() {
           value={searchQuery}
           onChangeText={handleSearch}
           returnKeyType="search"
+        />
+        <CategorySelector
+          categories={categories || []}
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategory}
         />
       </View>
 

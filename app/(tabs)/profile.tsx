@@ -6,9 +6,12 @@ import { useRouter, useFocusEffect } from "expo-router";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { useAuthForum } from "@/hooks/use-auth-forum";
+import { useDiscourseAuth } from "@/hooks/use-discourse-auth";
+import { DiscourseLoginButton } from "@/components/discourse-login-button";
 import { useThemeColor } from "@/hooks/use-theme-color";
 import { useColorScheme } from "@/hooks/use-color-scheme";
 import { useNotifications } from "@/hooks/use-notifications";
+import { PostItem } from "@/components/post-item";
 
 const FORUM_URL = "https://www.horlogeforum.nl";
 
@@ -16,6 +19,7 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { user, loading, isAuthenticated, logout } = useAuthForum();
+  const { login, isLoggingIn, error: authError } = useDiscourseAuth();
   const [recentPosts, setRecentPosts] = useState<any[]>([]);
   const [postsLoading, setPostsLoading] = useState(false);
   const colorScheme = useColorScheme();
@@ -146,17 +150,7 @@ export default function ProfileScreen() {
                 <ActivityIndicator color={tintColor} />
               ) : (
                 recentPosts.map((post) => (
-                  <ThemedView key={post.id} style={styles.postItem}>
-                    <ThemedText type="defaultSemiBold" numberOfLines={2}>
-                      {post.topic_title}
-                    </ThemedText>
-                    <ThemedText type="default" style={styles.postPreview} numberOfLines={2}>
-                      {post.cooked?.replace(/<[^>]*>/g, "") || ""}
-                    </ThemedText>
-                    <ThemedText type="default" style={styles.postDate}>
-                      {formatDate(post.created_at)}
-                    </ThemedText>
-                  </ThemedView>
+                  <PostItem key={post.id} post={post} formatDate={formatDate} />
                 ))
               )}
             </ThemedView>
@@ -175,7 +169,16 @@ export default function ProfileScreen() {
             </Pressable>
 
             <Pressable
-              onPress={handleLogout}
+              onPress={() => {
+                Alert.alert(
+                  "Logout",
+                  "Are you sure you want to log out?",
+                  [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Logout", style: "destructive", onPress: handleLogout }
+                  ]
+                );
+              }}
               style={({ pressed }) => [
                 styles.button,
                 styles.secondaryButton,
@@ -218,15 +221,11 @@ export default function ProfileScreen() {
             Log in to your Horlogeforum account to post topics, reply to discussions, and access your profile.
           </ThemedText>
 
-          <Pressable
-            onPress={() => router.push("/login")}
-            style={({ pressed }) => [
-              styles.loginButton,
-              { backgroundColor: tintColor, opacity: pressed ? 0.8 : 1 },
-            ]}
-          >
-            <ThemedText style={styles.loginButtonText}>Sign In</ThemedText>
-          </Pressable>
+          <DiscourseLoginButton 
+            onPress={login} 
+            loading={isLoggingIn} 
+            error={authError} 
+          />
 
           <ThemedText type="default" style={styles.loginInfo}>
             You can browse the forum without logging in. Sign in to participate in discussions.

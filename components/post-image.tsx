@@ -1,6 +1,7 @@
 import { Image } from 'expo-image';
 import React, { useState } from 'react';
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View, ActivityIndicator } from 'react-native';
+import ImageViewer from 'react-native-image-zoom-viewer';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ThemedText } from './themed-text';
@@ -34,6 +35,15 @@ export function PostImage({ url, alt, width = 300, height = 200 }: PostImageProp
     }
   };
 
+  const images = [
+    {
+      url: url,
+      props: {
+        // Pass props to the underlying Image component if needed
+      },
+    },
+  ];
+
   return (
     <>
       <Pressable
@@ -53,7 +63,7 @@ export function PostImage({ url, alt, width = 300, height = 200 }: PostImageProp
         />
         {isLoading && (
           <View style={styles.loadingOverlay}>
-            <ThemedText>Loading...</ThemedText>
+            <ActivityIndicator size="small" color="#fff" />
           </View>
         )}
         {showTooltip && alt && (
@@ -65,39 +75,31 @@ export function PostImage({ url, alt, width = 300, height = 200 }: PostImageProp
 
       <Modal
         visible={isFullscreen}
-        transparent
-        animationType="fade"
+        transparent={true}
         onRequestClose={() => setIsFullscreen(false)}
       >
-        <ThemedView
-          style={[
-            styles.fullscreenContainer,
-            {
-              paddingTop: Math.max(insets.top, 20),
-              paddingBottom: Math.max(insets.bottom, 20),
-              paddingLeft: Math.max(insets.left, 20),
-              paddingRight: Math.max(insets.right, 20),
-            },
-          ]}
-        >
-          <Pressable
-            style={styles.closeButton}
-            onPress={() => setIsFullscreen(false)}
-          >
-            <ThemedText style={styles.closeButtonText}>✕</ThemedText>
-          </Pressable>
-
-          <Image
-            source={{ uri: url }}
-            style={styles.fullscreenImage}
-            contentFit="contain"
-            cachePolicy="memory-disk"
-          />
-
-          {alt && (
-            <ThemedText style={styles.altText}>Photo: {alt}</ThemedText>
+        <ImageViewer
+          imageUrls={images}
+          onCancel={() => setIsFullscreen(false)}
+          enableSwipeDown={true}
+          saveToLocalByLongPress={false}
+          renderHeader={() => (
+            <Pressable
+              style={[styles.closeButton, { top: Math.max(insets.top, 20) }]}
+              onPress={() => setIsFullscreen(false)}
+            >
+              <ThemedText style={styles.closeButtonText}>✕</ThemedText>
+            </Pressable>
           )}
-        </ThemedView>
+          renderFooter={() => (
+            alt ? (
+              <View style={[styles.footer, { marginBottom: Math.max(insets.bottom, 20) }]}>
+                <ThemedText style={styles.altText}>{alt}</ThemedText>
+              </View>
+            ) : null
+          )}
+          loadingRender={() => <ActivityIndicator size="large" color="#fff" />}
+        />
       </Modal>
     </>
   );
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     borderRadius: 8,
     overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   loadingOverlay: {
     position: 'absolute',
@@ -117,20 +120,10 @@ const styles = StyleSheet.create({
     bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  fullscreenContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  fullscreenImage: {
-    width: '100%',
-    height: '80%',
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
   },
   closeButton: {
     position: 'absolute',
-    top: 20,
     right: 20,
     zIndex: 10,
     width: 44,
@@ -145,10 +138,19 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: 'bold',
   },
+  footer: {
+    width: '100%',
+    paddingHorizontal: 20,
+    alignItems: 'center',
+  },
   altText: {
-    marginTop: 12,
-    fontSize: 12,
+    color: '#fff',
+    fontSize: 14,
     textAlign: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    paddingVertical: 4,
+    paddingHorizontal: 12,
+    borderRadius: 16,
   },
   tooltip: {
     position: 'absolute',

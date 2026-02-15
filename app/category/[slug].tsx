@@ -1,36 +1,30 @@
 import { FlatList, RefreshControl, StyleSheet, View, ActivityIndicator } from "react-native";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter, Stack } from "expo-router";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useState, useCallback, useEffect } from "react";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { TopicCard } from "@/components/topic-card";
-import { useLatestTopics, useTopicsByCategory, useCategories } from "@/hooks/use-forum-data-trpc";
+import { useTopicsByCategory, useCategories } from "@/hooks/use-forum-data-trpc";
 import { useThemeColor } from "@/hooks/use-theme-color";
-import { useDiscourseAuth } from "@/hooks/use-discourse-auth";
-// import { DiscourseLoginButton } from "@/components/discourse-login-button";
-import { CategorySelector } from "@/components/category-selector";
 
-export default function HomeScreen() {
+export default function CategoryScreen() {
+  const { slug } = useLocalSearchParams<{ slug: string }>();
   const insets = useSafeAreaInsets();
   const [page, setPage] = useState(0);
   const [allTopics, setAllTopics] = useState<any[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   
-  const { data: latestTopics, loading: loadingLatest, error: errorLatest } = useLatestTopics(selectedCategory ? -1 : page);
-  const { data: categoryTopics, loading: loadingCategory, error: errorCategory } = useTopicsByCategory(selectedCategory || "", selectedCategory ? page : -1);
+  const { data: topics, loading, error } = useTopicsByCategory(slug || "", page);
   const { data: categories } = useCategories();
   
-  const topics = selectedCategory ? categoryTopics : latestTopics;
-  const loading = selectedCategory ? loadingCategory : loadingLatest;
-  const error = selectedCategory ? errorCategory : errorLatest;
+  const category = categories?.find(c => c.slug === slug);
+  const categoryName = category?.name || slug;
 
   const [refreshing, setRefreshing] = useState(false);
   const tintColor = useThemeColor({}, "tint");
-  const { user, isAuthenticated } = useDiscourseAuth();
 
-  // Update all topics when new page is loaded or category changes
+  // Update all topics when new page is loaded
   useEffect(() => {
     if (topics && topics.length > 0) {
       if (page === 0) {
@@ -44,7 +38,7 @@ export default function HomeScreen() {
     } else if (topics && topics.length === 0 && page === 0) {
       setAllTopics([]);
     }
-  }, [topics, page, selectedCategory]);
+  }, [topics, page]);
 
   const handleLoadMore = useCallback(() => {
     if (!loading && topics && topics.length > 0) {
@@ -52,23 +46,21 @@ export default function HomeScreen() {
     }
   }, [loading, topics]);
 
-  // Handle refresh
   const handleRefresh = useCallback(() => {
     setRefreshing(true);
     setPage(0);
-    // Don't clear allTopics immediately to avoid flicker, useEffect will handle it
     setTimeout(() => setRefreshing(false), 500);
   }, []);
 
-  const handleSelectCategory = (slug: string | null) => {
-    setSelectedCategory(slug);
-    setPage(0);
-    setAllTopics([]);
-  };
-
   return (
     <ThemedView style={styles.container}>
-
+      <Stack.Screen 
+        options={{ 
+          title: categoryName,
+          headerShown: true,
+          headerBackTitle: "Back"
+        }} 
+      />
       
       {loading && page === 0 ? (
         <View style={styles.centerContainer}>
@@ -89,31 +81,14 @@ export default function HomeScreen() {
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={tintColor} />
           }
-          ListHeaderComponent={
-            <View>
-              {isAuthenticated && user && (
-                <View style={styles.welcomeHeader}>
-                  <ThemedText type="subtitle">Welcome back, {user.username}!</ThemedText>
-                </View>
-              )}
-              <CategorySelector
-                categories={categories || []}
-                selectedCategory={selectedCategory}
-                onSelectCategory={handleSelectCategory}
-              />
-            </View>
-          }
           ListEmptyComponent={
             !loading ? (
               <View style={styles.centerContainer}>
-                <ThemedText type="subtitle">No topics found</ThemedText>
+                <ThemedText type="subtitle">No topics found in this category</ThemedText>
               </View>
             ) : null
           }
-          scrollEnabled={true}
-          nestedScrollEnabled={true}
           contentContainerStyle={{
-            paddingTop: Math.max(insets.top, 0),
             paddingBottom: Math.max(insets.bottom, 20),
           }}
         />
@@ -131,15 +106,5 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 16,
-  },
-  loginContainer: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.1)",
-  },
-  welcomeHeader: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "rgba(0,0,0,0.1)",
   },
 });

@@ -4,11 +4,11 @@
 
 ### Phase 1: Foundation & Authentication
 - [x] Set up Discourse API integration and authentication
-- [ ] Implement OAuth login flow with Discourse
-- [x] Create login screen with "Login with Discourse" button
+- [x] Implement OAuth login flow with Discourse
+- [x] Create login screen with "Login with Discourse" button (now on profile screen)
 - [x] Handle OAuth callback and token storage
-- [ ] Implement logout functionality
-- [ ] Create user session management
+- [x] Implement logout functionality
+- [x] Create user session management
 
 ### Phase 2: Forum Browsing
 - [x] Create home screen with forum feed
@@ -16,8 +16,8 @@
 - [x] Implement pull-to-refresh on home screen
 - [x] Implement infinite scroll / pagination for topics
 - [x] Display topic metadata (title, category, replies, views, last activity)
-- [ ] Create category filtering UI (segmented control or dropdown)
-- [ ] Implement category view screen
+- [x] Create category filtering UI (segmented control or dropdown)
+- [x] Implement category view screen
 
 ### Phase 3: Topic & Discussion Viewing
 - [x] Create topic detail screen
@@ -32,15 +32,15 @@
 - [x] Create search tab and screen
 - [x] Implement search functionality using Discourse API
 - [x] Display search results as a list
-- [ ] Add category filtering to search results
+- [x] Add category filtering to search results
 - [x] Show "no results" message when appropriate
 
 ### Phase 5: User Profile
-- [ ] Create user profile screen
-- [ ] Display user information (avatar, username, member since, post count)
-- [ ] Show user's recent posts
+- [x] Create user profile screen
+- [x] Display user information (avatar, username, member since, post count)
+- [x] Show user's recent posts
 - [ ] Implement profile navigation from post avatars
-- [ ] Add logout button to profile screen (if authenticated)
+- [x] Add logout button to profile screen (if authenticated)
 
 ### Phase 6: Settings & Preferences
 - [x] Create settings screen
@@ -253,10 +253,10 @@
 - [x] Implement secure session token storage
 - [x] Add user info caching with SecureStore (native) and localStorage (web)
 - [x] Create comprehensive unit tests for OAuth flow
-- [ ] Configure Discourse OAuth credentials in environment variables
+- [x] Configure Discourse OAuth credentials in environment variables
 - [ ] Test OAuth flow on native devices with real Discourse instance
 - [x] Integrate Discourse login button into home screen
-- [ ] Add logout functionality with session cleanup
+- [x] Add logout functionality with session cleanup
 
 **Note:** Discourse OAuth is fully implemented with:
 - OAuth authorization URL generation with CSRF protection
